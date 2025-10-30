@@ -194,13 +194,10 @@ public:
         ++size_;
     }
 
-    // Insert element after position pos with copying or moving
     template <typename T>
     Iterator InsertAfter(ConstIterator pos, T&& value) {
-        if(!pos) {
-            return Iterator{nullptr};
-        }
-
+        // ИЗМЕНЕНО: используем assert
+        assert(pos);
         Node* insert_node = new Node(std::forward<T>(value), pos.node_->next_node);
         pos.node_->next_node = insert_node;
 
@@ -208,11 +205,12 @@ public:
 
         return Iterator{insert_node};
     }
-
-    void PopFront() noexcept {
-        if(IsEmpty()) {
+    
+     void PopFront() noexcept {
+        // ИЗМЕНЕНО: assert 
+        assert(!IsEmpty());
+        if (IsEmpty()) // дополнительная защита в release (чтобы не UB)
             return;
-        }
 
         Node* pop_node = head_.next_node;
         head_.next_node = pop_node->next_node;
@@ -221,10 +219,11 @@ public:
         --size_;
     }
 
-    Iterator EraseAfter(ConstIterator pos) noexcept {
-        if(!pos || !pos.node_->next_node) {
+   Iterator EraseAfter(ConstIterator pos) noexcept {
+        // ИЗМЕНЕНО: assert 
+        assert(pos && pos.node_->next_node);
+        if (!pos || !pos.node_->next_node) // дополнительная защита в release
             return Iterator{nullptr};
-        }
 
         Node* erase_node = pos.node_->next_node;
         pos.node_->next_node = erase_node->next_node;
@@ -264,6 +263,10 @@ void swap(SingleLinkedList<Type>& left, SingleLinkedList<Type>& right) noexcept 
 
 template <typename Type>
 bool operator==(const SingleLinkedList<Type>& left, const SingleLinkedList<Type>& right) {
+    if (&left == &right)
+        return true;
+    if (left.GetSize() != right.GetSize())
+        return false;
     return std::equal(left.begin(), left.end(), right.begin(), right.end());
 }
 
